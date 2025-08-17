@@ -1,11 +1,12 @@
 {
-  "name": "stremio-onepace",
-  "version": "1.0.0",
-  "description": "One Pace addon for Stremio",
+  "name": "stremio-onepace-torbox-enhanced",
+  "version": "4.0.0",
+  "description": "Enhanced One Pace addon for Stremio with Torbox integration",
   "main": "server.js",
   "scripts": {
     "test": "node test/*",
-    "start": "node server.js"
+    "start": "node server.js",
+    "configure": "node configure-torbox.js"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,9 @@
   },
   "homepage": "https://github.com/fedew04/OnePaceStremio",
   "dependencies": {
+    "express": "^4.18.2",
     "magnet-uri": "^6.2.0",
+    "node-fetch": "^2.7.0",
     "stremio-addon-sdk": "^1.6.10"
   }
 }

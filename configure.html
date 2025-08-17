@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Pace + Torbox Enhanced - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px 5px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .button.secondary {
+            background: #6c757d;
+        }
+
+        .install-url {
+            background: #f8f9fa;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 15px 0;
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .steps {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .steps ol {
+            margin-left: 20px;
+        }
+
+        .steps li {
+            margin: 10px 0;
+            color: #333;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #155724;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li::before {
+            content: "✅";
+            font-size: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏴‍☠️⚡</div>
+            <h1>One Pace + Torbox Enhanced</h1>
+            <p class="subtitle">Configure your Stremio addon for enhanced streaming</p>
+        </div>
+
+        <div class="section">
+            <h3>🎯 What You Get</h3>
+            <ul class="feature-list">
+                <li>All One Pace episodes in proper order</li>
+                <li>Instant streaming with Torbox (optional)</li>
+                <li>Multiple quality options</li>
+                <li>No conflicts with other addons</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h3>🚀 Torbox Configuration (Optional)</h3>
+            <p style="margin-bottom: 15px;">
+                Enter your Torbox API key for premium instant streaming. Leave empty for free torrent-only mode.
+            </p>
+            
+            <div class="input-group">
+                <label for="torboxApiKey">Torbox API Key:</label>
+                <input type="password" id="torboxApiKey" placeholder="Enter your Torbox API key (optional)" />
+                <small style="color: #666; margin-top: 5px; display: block;">
+                    Get your API key from <a href="https://torbox.app/settings" target="_blank">torbox.app/settings</a>
+                </small>
+            </div>
+
+            <button type="button" class="button" onclick="generateInstallUrl()">
+                Generate Install URL
+            </button>
+            
+            <button type="button" class="button secondary" onclick="skipTorbox()">
+                Skip Torbox (Free Mode)
+            </button>
+        </div>
+
+        <div id="installSection" class="section hidden">
+            <h3>📱 Installation URL</h3>
+            <p>Copy this URL and paste it into Stremio's "Community Add-ons" section:</p>
+            
+            <div id="installUrl" class="install-url"></div>
+            
+            <button type="button" class="button" onclick="copyToClipboard()">
+                📋 Copy URL
+            </button>
+            
+            <button type="button" class="button secondary" onclick="openStremio()">
+                🎬 Open in Stremio
+            </button>
+        </div>
+
+        <div id="instructionsSection" class="steps hidden">
+            <h3>📝 Installation Steps</h3>
+            <ol>
+                <li><strong>Copy</strong> the installation URL above</li>
+                <li><strong>Open Stremio</strong> on your device</li>
+                <li>Click the <strong>puzzle piece icon (🧩)</strong> to access Add-ons</li>
+                <li>Click <strong>"Community Add-ons"</strong></li>
+                <li><strong>Paste the URL</strong> and click Install</li>
+                <li>Go to <strong>Discover → Series</strong> to find "One Pace + Torbox Enhanced"</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Privacy Note:</strong> Your API key is only used in the URL parameters and is not stored on our servers. Keep your API key secure and don't share installation URLs containing it.
+        </div>
+    </div>
+
+    <script>
+        let currentUrl = '';
+
+        function generateInstallUrl() {
+            const apiKey = document.getElementById('torboxApiKey').value.trim();
+            const baseUrl = window.location.origin;
+            
+            if (apiKey) {
+                currentUrl = `${baseUrl}/manifest.json?torboxApiKey=${encodeURIComponent(apiKey)}`;
+            } else {
+                currentUrl = `${baseUrl}/manifest.json`;
+            }
+            
+            document.getElementById('installUrl').textContent = currentUrl;
+            document.getElementById('installSection').classList.remove('hidden');
+            document.getElementById('instructionsSection').classList.remove('hidden');
+        }
+
+        function skipTorbox() {
+            document.getElementById('torboxApiKey').value = '';
+            generateInstallUrl();
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(currentUrl).then(() => {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '';
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = currentUrl;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                alert('URL copied to clipboard!');
+            });
+        }
+
+        function openStremio() {
+            const stremioUrl = `stremio://detail/addon/${encodeURIComponent(currentUrl)}`;
+            window.open(stremioUrl, '_blank');
+        }
+
+        // Auto-generate URL if no API key is needed
+        window.onload = function() {
+            // Check if there's a hash with API key
+            const urlParams = new URLSearchParams(window.location.search);
+            const apiKey = urlParams.get('apiKey');
+            if (apiKey) {
+                document.getElementById('torboxApiKey').value = apiKey;
+                generateInstallUrl();
+            }
+        };
+    </script>
+</body>
+</html>
