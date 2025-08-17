@@ -7,6 +7,16 @@
     "configurable": true,
     "configurationRequired": false
   },
+  "config": [
+    {
+      "key": "torboxApiKey",
+      "type": "text",
+      "title": "Torbox API Key (Optional)",
+      "required": false,
+      "default": "",
+      "options": []
+    }
+  ],
 
   "logo": "https://i.pinimg.com/originals/4c/46/ee/4c46ee47e0710a6d928454f68fc4ee17.png",
   "resources": [

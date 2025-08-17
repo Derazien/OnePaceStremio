@@ -276,7 +276,8 @@
             const baseUrl = window.location.origin;
             
             if (apiKey) {
-                currentUrl = `${baseUrl}/manifest.json?torboxApiKey=${encodeURIComponent(apiKey)}`;
+                // Use Torrentio-style URL format: /torbox=API_KEY/manifest.json
+                currentUrl = `${baseUrl}/torbox=${apiKey}/manifest.json`;
             } else {
                 currentUrl = `${baseUrl}/manifest.json`;
             }
