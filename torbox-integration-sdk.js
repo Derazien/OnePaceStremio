@@ -57,9 +57,8 @@ class TorboxIntegrationSDK {
             const FormData = require('form-data');
             const form = new FormData();
             form.append('magnet', magnetLink);
-            form.append('seed', '1');
-            form.append('allowZip', 'false');
-            form.append('asQueued', 'false');
+            form.append('seed', '3');          // 3 = don't seed (download only)
+            form.append('asQueued', 'true');
             
             const response = await fetch('https://api.torbox.app/v1/api/torrents/createtorrent', {
                 method: 'POST',

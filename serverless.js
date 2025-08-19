@@ -24,7 +24,7 @@ module.exports = function(req, res) {
             console.error('❌ [Serverless] Error loading configure.html:', error);
             res.setHeader('Content-Type', 'text/html');
             res.end(`
-                <h1>🏴‍☠️ One Pace + Torbox Enhanced</h1>
+                <h1>🏴‍☠️ One Pace - WatchParty</h1>
                 <p><strong>Addon is running successfully!</strong></p>
                 <p><strong>Basic installation:</strong></p>
                 <code>https://${req.headers.host}/manifest.json</code>

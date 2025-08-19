@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
         res.sendFile(configPath);
     } else {
         res.send(`
-            <h1>🏴‍☠️ One Pace + Torbox Enhanced</h1>
+            <h1>🏴‍☠️ One Pace - WatchParty</h1>
             <p><strong>Addon is running!</strong></p>
             <p>Install: <code>${req.protocol}://${req.get('host')}/manifest.json</code></p>
         `);

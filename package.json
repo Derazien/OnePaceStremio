@@ -1,7 +1,7 @@
 {
-  "name": "stremio-onepace-torbox-enhanced",
+  "name": "stremio-onepace-watchparty",
   "version": "4.0.0",
-  "description": "Enhanced One Pace addon for Stremio with Torbox integration",
+  "description": "One Pace - WatchParty addon for Stremio with Torbox integration",
   "main": "server.js",
   "scripts": {
     "test": "node test/*",

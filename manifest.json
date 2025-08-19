@@ -1,8 +1,8 @@
 {
-  "id": "com.onepace.torbox.enhanced",
+  "id": "com.onepace.watchparty",
   "version": "4.0.0",
-  "name": "One Pace + Torbox Enhanced",
-  "description": "Enhanced One Pace addon with Torbox integration for instant streaming (https://onepace.net/). Features both P2P torrents and premium Torbox streams.",
+  "name": "One Pace - WatchParty",
+  "description": "One Pace - WatchParty addon with Torbox integration for instant streaming (https://onepace.net/). Features both P2P torrents and premium Torbox streams.",
   "behaviorHints": {
     "configurable": true,
     "configurationRequired": false
@@ -33,7 +33,7 @@
     {
       "type": "series",
       "id": "seriesCatalog",
-      "name": "One Pace",
+      "name": "One Pace - WatchParty",
       "extra": [
         {
           "name": "search",

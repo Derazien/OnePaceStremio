@@ -1,4 +1,4 @@
-# One Pace Stremio Addon
+# One Pace - WatchParty
 
 An **unofficial** Stremio addon for watching [One Pace](https://onepace.net/) episodes - a fan project that recuts the One Piece anime to match the manga pacing.
 
