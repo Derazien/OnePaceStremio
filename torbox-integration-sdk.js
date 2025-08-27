@@ -188,7 +188,9 @@ class TorboxIntegrationSDK {
                         behaviorHints: {
                             bingeGroup: "onepace-torbox",
                             countryWhitelist: ["US", "GB", "CA", "AU", "DE", "FR", "NL", "IT", "ES"]
-                        }
+                        },
+                        isStaticContent: true,
+                        notWebReady: false,
                     };
                     
                     console.log(`✅ [Torbox SDK] Successfully created permalink stream`);
