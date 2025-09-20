@@ -2,7 +2,7 @@
   "id": "com.onepace.watchparty",
   "version": "4.0.0",
   "name": "One Pace - WatchParty",
-  "description": "One Pace - WatchParty addon with Torbox integration and official One Pace subtitles (https://onepace.net/). Features P2P torrents, premium Torbox streams, official One Pace subtitles, and OpenSubtitles fallback. Compatible with Local Files addon for automatic local content detection.",
+  "description": "One Pace - WatchParty addon with official streams and subtitles (https://onepace.net/). Features official One Pace Pixeldrain streams, premium Torbox integration, P2P torrents, official subtitles, and OpenSubtitles fallback. The most complete One Pace addon available.",
   "behaviorHints": {
     "configurable": true,
     "configurationRequired": false,

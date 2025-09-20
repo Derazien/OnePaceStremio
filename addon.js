@@ -4,6 +4,7 @@ const path = require("path");
 const TorboxIntegration = require("./torbox-integration-sdk");
 const OpenSubtitlesIntegration = require("./opensubtitles-integration");
 const OnePaceSubtitlesIntegration = require("./onepace-subtitles-integration");
+const OnePaceStreamsIntegration = require("./onepace-streams-integration");
 
 // Load manifest
 const manifest = require("./manifest.json");
@@ -140,6 +141,27 @@ async function fetchExternalSubtitles(episodeInfo, args) {
     }
 }
 
+// Helper function to fetch official One Pace video streams
+async function fetchOfficialStreams(episodeInfo) {
+    try {
+        console.log(`🎌 [Official Streams] Checking for official One Pace streams for ${episodeInfo.id}...`);
+        
+        const onePaceStreams = new OnePaceStreamsIntegration();
+        const officialStreams = await onePaceStreams.getOfficialStreams(episodeInfo);
+        
+        if (officialStreams.length > 0) {
+            console.log(`✅ [Official Streams] Found ${officialStreams.length} official stream options`);
+        } else {
+            console.log(`ℹ️ [Official Streams] No official streams found for ${episodeInfo.id}`);
+        }
+        
+        return officialStreams;
+    } catch (error) {
+        console.error(`💥 [Official Streams] Error fetching official streams:`, error);
+        return [];
+    }
+}
+
 // Define catalog handler
 builder.defineCatalogHandler(({ type, id }) => {
     console.log(`📋 [Catalog] Request: type=${type}, id=${id}`);
@@ -250,33 +272,61 @@ builder.defineStreamHandler(async (args) => {
 
     const streams = [];
     
-    // Check if Torbox integration is available first
+    // Step 1: Get official One Pace streams (HIGHEST PRIORITY)
+    console.log(`🎌 [Stream] Fetching official One Pace streams...`);
+    const officialStreams = await fetchOfficialStreams(episodeInfo);
+    
+    // Step 2: Check if Torbox integration is available
     console.log(`🔍 [Stream] Checking for Torbox integration...`);
     const torboxIntegration = getTorboxIntegration(args);
     const hasTorbox = !!torboxIntegration;
     
     if (hasTorbox) {
-        console.log(`🚀 [Stream] Torbox mode: Will only provide Torbox streams (no torrents)`);
+        console.log(`🚀 [Stream] Torbox mode: Will provide Torbox streams as secondary option`);
     } else {
-        console.log(`📁 [Stream] Torrent mode: Will provide torrent streams only`);
+        console.log(`📁 [Stream] Torrent mode: Will provide torrent streams as fallback`);
     }
     
-    // Fetch external subtitles for this episode
+    // Step 3: Fetch external subtitles for this episode
     console.log(`🔍 [Stream] Fetching external subtitles...`);
     const externalSubtitles = await fetchExternalSubtitles(episodeInfo, args);
     
-    // Process each stream
+    // Step 4: Add official streams first (highest priority)
+    if (officialStreams.length > 0) {
+        console.log(`🎌 [Stream] Adding ${officialStreams.length} official One Pace streams`);
+        
+        // Add external subtitles to official streams
+        officialStreams.forEach(stream => {
+            if (externalSubtitles.length > 0) {
+                stream.subtitles = [
+                    ...(stream.subtitles || []), // Keep existing embedded subtitles
+                    ...externalSubtitles.map(sub => ({
+                        url: sub.url,
+                        lang: sub.lang,
+                        label: sub.label
+                    }))
+                ];
+            }
+        });
+        
+        streams.push(...officialStreams);
+    }
+    
+    // Step 5: Add Torbox/Torrent streams as secondary options
     for (const stream of streamData.streams) {
         if (stream.infoHash) {
             
             if (hasTorbox) {
-                // TORBOX MODE: Only provide Torbox streams
+                // TORBOX MODE: Provide Torbox streams as secondary option
                 const fileIndex = stream.fileIdx || 0;
                 console.log(`✅ [Stream] Processing Torbox stream for hash: ${stream.infoHash}, fileIdx: ${fileIndex}`);
                 try {
                     const torboxStream = await torboxIntegration.getStreamUrl(stream.infoHash, fileIndex);
                     if (torboxStream) {
                         console.log(`🎉 [Stream] Torbox stream created successfully!`);
+                        
+                        // Update title to indicate priority (secondary to official)
+                        torboxStream.title = `🚀 Torbox Premium - ${episodeInfo.title}`;
                         
                         // Enhance stream with episode-specific metadata for Local Files detection
                         torboxStream.name = episodeInfo.title || `One Pace Episode ${stream.infoHash.substring(0, 8)}`;
@@ -298,20 +348,19 @@ builder.defineStreamHandler(async (args) => {
                         
                         streams.push(torboxStream);
                     } else {
-                        console.log(`⚠️ [Stream] Torbox returned null stream - no fallback torrent provided`);
+                        console.log(`⚠️ [Stream] Torbox returned null stream`);
                     }
                 } catch (error) {
                     console.error(`💥 [Stream] Error getting Torbox stream for ${stream.infoHash}:`, error);
-                    // Don't add torrent fallback - user has Torbox, they expect premium experience
                 }
                 
             } else {
-                // TORRENT MODE: Only provide torrent streams  
+                // TORRENT MODE: Provide torrent streams as fallback
                 console.log(`📁 [Stream] Adding torrent stream for hash: ${stream.infoHash}`);
                 
                 const torrentStream = {
                     ...stream,
-                    title: `📁 Torrent - ${episodeInfo.title}`,
+                    title: `📁 P2P Torrent - ${episodeInfo.title}`,
                     // Enhanced metadata for Local Files addon detection
                     name: episodeInfo.title || `One Pace Episode ${stream.infoHash.substring(0, 8)}`,
                     filename: `OnePace_${stream.infoHash.substring(0, 8)}.mkv`,
@@ -340,6 +389,19 @@ builder.defineStreamHandler(async (args) => {
             }
         }
     }
+
+    // Final summary
+    const officialCount = officialStreams.length;
+    const torboxCount = streams.filter(s => s.title && s.title.includes('Torbox')).length;
+    const torrentCount = streams.filter(s => s.title && s.title.includes('Torrent')).length;
+    const subtitleCount = externalSubtitles.length;
+    
+    console.log(`📊 [Stream Summary] Episode ${episodeInfo.id}:`);
+    console.log(`  🎌 Official streams: ${officialCount}`);
+    console.log(`  🚀 Torbox streams: ${torboxCount}`);
+    console.log(`  📁 Torrent streams: ${torrentCount}`);
+    console.log(`  🔤 Subtitle options: ${subtitleCount}`);
+    console.log(`  📺 Total streams: ${streams.length}`);
 
     return Promise.resolve({ streams });
 });
