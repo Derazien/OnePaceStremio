@@ -2,6 +2,8 @@ const { addonBuilder } = require("stremio-addon-sdk");
 const fs = require("fs");
 const path = require("path");
 const TorboxIntegration = require("./torbox-integration-sdk");
+const OpenSubtitlesIntegration = require("./opensubtitles-integration");
+const OnePaceSubtitlesIntegration = require("./onepace-subtitles-integration");
 
 // Load manifest
 const manifest = require("./manifest.json");
@@ -59,6 +61,83 @@ function getTorboxIntegration(args) {
     
     console.log(`❌ [API Key] No valid API key found`);
     return null;
+}
+
+// Helper function to get OpenSubtitles integration
+function getOpenSubtitlesIntegration(args) {
+    const apiKey = args?.config?.openSubtitlesApiKey || process.env.OPENSUBTITLES_API_KEY;
+    console.log(`🔤 [OpenSubtitles] ${apiKey ? 'Using API v3' : 'Using free API v1'}`);
+    return new OpenSubtitlesIntegration(apiKey);
+}
+
+// Helper function to get preferred subtitle languages
+function getSubtitleLanguages(args) {
+    const config = args?.config?.subtitleLanguages || 'en';
+    console.log(`🌐 [Subtitles] Language config: ${config}`);
+    
+    if (config === 'all') {
+        return ['en', 'es', 'fr', 'pt', 'de', 'it', 'ja', 'ko', 'zh'];
+    }
+    
+    return config.split(',').map(lang => lang.trim());
+}
+
+// Helper function to fetch external subtitles for an episode
+async function fetchExternalSubtitles(episodeInfo, args) {
+    try {
+        const languages = getSubtitleLanguages(args);
+        console.log(`🔍 [Subtitles] Searching for: ${episodeInfo.title} in languages: ${languages.join(', ')}`);
+        
+        let allSubtitles = [];
+        
+        // 1. PRIORITY: Get official One Pace subtitles first
+        console.log(`🎌 [Subtitles] Checking for official One Pace subtitles...`);
+        const onePaceSubtitles = new OnePaceSubtitlesIntegration();
+        const officialSubtitles = await onePaceSubtitles.getOfficialSubtitles(episodeInfo, languages);
+        
+        if (officialSubtitles.length > 0) {
+            console.log(`✅ [Subtitles] Found ${officialSubtitles.length} official One Pace subtitles`);
+            allSubtitles.push(...officialSubtitles);
+        } else {
+            console.log(`ℹ️ [Subtitles] No official One Pace subtitles found for ${episodeInfo.id}`);
+        }
+        
+        // 2. FALLBACK: Get OpenSubtitles as additional options
+        console.log(`🔍 [Subtitles] Searching OpenSubtitles for additional options...`);
+        const openSubtitles = getOpenSubtitlesIntegration(args);
+        const communitySubtitles = await openSubtitles.searchSubtitles(episodeInfo, languages);
+        
+        if (communitySubtitles.length > 0) {
+            console.log(`✅ [Subtitles] Found ${communitySubtitles.length} community subtitles from OpenSubtitles`);
+            // Mark community subtitles with lower priority
+            const markedCommunitySubtitles = communitySubtitles.map(sub => ({
+                ...sub,
+                label: sub.label.replace('OpenSubtitles', 'Community'),
+                rating: (sub.rating || 0) * 0.8, // Slightly lower priority than official
+            }));
+            allSubtitles.push(...markedCommunitySubtitles);
+        }
+        
+        // Sort by priority (official One Pace first, then by rating)
+        allSubtitles.sort((a, b) => {
+            // Official One Pace subtitles always come first
+            if (a.source === 'onepace-official' && b.source !== 'onepace-official') return -1;
+            if (b.source === 'onepace-official' && a.source !== 'onepace-official') return 1;
+            
+            // Within same source type, sort by rating
+            return (b.rating || 0) - (a.rating || 0);
+        });
+        
+        // Limit total results to avoid overwhelming users
+        const limitedSubtitles = allSubtitles.slice(0, 15);
+        
+        console.log(`📊 [Subtitles] Total subtitle options: ${limitedSubtitles.length} (${officialSubtitles.length} official, ${communitySubtitles.length} community)`);
+        
+        return limitedSubtitles;
+    } catch (error) {
+        console.error(`💥 [Subtitles] Error fetching external subtitles:`, error);
+        return [];
+    }
 }
 
 // Define catalog handler
@@ -182,6 +261,10 @@ builder.defineStreamHandler(async (args) => {
         console.log(`📁 [Stream] Torrent mode: Will provide torrent streams only`);
     }
     
+    // Fetch external subtitles for this episode
+    console.log(`🔍 [Stream] Fetching external subtitles...`);
+    const externalSubtitles = await fetchExternalSubtitles(episodeInfo, args);
+    
     // Process each stream
     for (const stream of streamData.streams) {
         if (stream.infoHash) {
@@ -194,6 +277,25 @@ builder.defineStreamHandler(async (args) => {
                     const torboxStream = await torboxIntegration.getStreamUrl(stream.infoHash, fileIndex);
                     if (torboxStream) {
                         console.log(`🎉 [Stream] Torbox stream created successfully!`);
+                        
+                        // Enhance stream with episode-specific metadata for Local Files detection
+                        torboxStream.name = episodeInfo.title || `One Pace Episode ${stream.infoHash.substring(0, 8)}`;
+                        torboxStream.episode = episodeInfo.episode;
+                        torboxStream.season = episodeInfo.season;
+                        
+                        // Add external subtitles to Torbox stream
+                        if (externalSubtitles.length > 0) {
+                            console.log(`🔤 [Stream] Adding ${externalSubtitles.length} external subtitles to Torbox stream`);
+                            torboxStream.subtitles = [
+                                ...(torboxStream.subtitles || []), // Keep existing embedded subtitles
+                                ...externalSubtitles.map(sub => ({
+                                    url: sub.url,
+                                    lang: sub.lang,
+                                    label: sub.label
+                                }))
+                            ];
+                        }
+                        
                         streams.push(torboxStream);
                     } else {
                         console.log(`⚠️ [Stream] Torbox returned null stream - no fallback torrent provided`);
@@ -206,13 +308,35 @@ builder.defineStreamHandler(async (args) => {
             } else {
                 // TORRENT MODE: Only provide torrent streams  
                 console.log(`📁 [Stream] Adding torrent stream for hash: ${stream.infoHash}`);
-                streams.push({
+                
+                const torrentStream = {
                     ...stream,
                     title: `📁 Torrent - ${episodeInfo.title}`,
+                    // Enhanced metadata for Local Files addon detection
+                    name: episodeInfo.title || `One Pace Episode ${stream.infoHash.substring(0, 8)}`,
+                    filename: `OnePace_${stream.infoHash.substring(0, 8)}.mkv`,
+                    episode: episodeInfo.episode,
+                    season: episodeInfo.season,
                     behaviorHints: {
-                        bingeGroup: "onepace-torrent"
+                        bingeGroup: "onepace-torrent",
+                        // Content identifiers for cross-addon recognition
+                        contentId: `onepace_${stream.infoHash}`,
+                        torrentHash: stream.infoHash,
+                        localFilename: `One Pace - ${episodeInfo.title || 'Episode'}.mkv`
                     }
-                });
+                };
+                
+                // Add external subtitles to torrent stream
+                if (externalSubtitles.length > 0) {
+                    console.log(`🔤 [Stream] Adding ${externalSubtitles.length} external subtitles to torrent stream`);
+                    torrentStream.subtitles = externalSubtitles.map(sub => ({
+                        url: sub.url,
+                        lang: sub.lang,
+                        label: sub.label
+                    }));
+                }
+                
+                streams.push(torrentStream);
             }
         }
     }

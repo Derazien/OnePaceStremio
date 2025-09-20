@@ -2,16 +2,44 @@
   "id": "com.onepace.watchparty",
   "version": "4.0.0",
   "name": "One Pace - WatchParty",
-  "description": "One Pace - WatchParty addon with Torbox integration for instant streaming (https://onepace.net/). Features both P2P torrents and premium Torbox streams.",
+  "description": "One Pace - WatchParty addon with Torbox integration and official One Pace subtitles (https://onepace.net/). Features P2P torrents, premium Torbox streams, official One Pace subtitles, and OpenSubtitles fallback. Compatible with Local Files addon for automatic local content detection.",
   "behaviorHints": {
     "configurable": true,
-    "configurationRequired": false
+    "configurationRequired": false,
+    "adult": false,
+    "p2p": true,
+    "configurable": true
   },
   "config": [
     {
       "key": "torboxApiKey",
       "type": "text",
       "title": "Torbox API Key (Optional)",
+      "required": false,
+      "default": "",
+      "options": []
+    },
+    {
+      "key": "subtitleLanguages",
+      "type": "select",
+      "title": "Preferred Subtitle Languages",
+      "required": false,
+      "default": "en",
+      "options": [
+        {"value": "en", "label": "English"},
+        {"value": "en,es", "label": "English + Spanish"},
+        {"value": "en,fr", "label": "English + French"}, 
+        {"value": "en,pt", "label": "English + Portuguese"},
+        {"value": "en,de", "label": "English + German"},
+        {"value": "en,it", "label": "English + Italian"},
+        {"value": "en,ja", "label": "English + Japanese"},
+        {"value": "all", "label": "All Available Languages"}
+      ]
+    },
+    {
+      "key": "openSubtitlesApiKey",
+      "type": "text",
+      "title": "OpenSubtitles API Key (Optional - for better subtitle access)",
       "required": false,
       "default": "",
       "options": []

@@ -185,9 +185,28 @@ class TorboxIntegrationSDK {
                     const streamObject = {
                         url: permalinkUrl,
                         title: `🚀 Torbox (Instant) - One Pace Episode`,
+                        // Enhanced metadata for Local Files addon detection
+                        name: `One Pace Episode ${infoHash.substring(0, 8)}`,
+                        filename: `OnePace_${infoHash.substring(0, 8)}.mkv`,
+                        // Add media info for better detection
+                        quality: "1080p",
+                        subtitles: [
+                            {
+                                url: permalinkUrl,
+                                lang: "eng"
+                            }
+                        ],
                         behaviorHints: {
                             bingeGroup: "onepace-torbox",
-                            countryWhitelist: ["US", "GB", "CA", "AU", "DE", "FR", "NL", "IT", "ES"]
+                            countryWhitelist: ["US", "GB", "CA", "AU", "DE", "FR", "NL", "IT", "ES"],
+                            // Enhanced hints for local file detection
+                            hasMultipleAudioTracks: true,
+                            hasSubtitles: true,
+                            // Content identifiers for cross-addon recognition
+                            contentId: `onepace_${infoHash}`,
+                            torrentHash: infoHash,
+                            // Suggest local filename pattern
+                            localFilename: `One Pace - Episode ${infoHash.substring(0, 8)}.mkv`
                         },
                         isStaticContent: true,
                         notWebReady: false,
