@@ -142,11 +142,11 @@ async function fetchExternalSubtitles(episodeInfo, args) {
 }
 
 // Helper function to fetch official One Pace video streams
-async function fetchOfficialStreams(episodeInfo) {
+async function fetchOfficialStreams(episodeInfo, torboxIntegration = null) {
     try {
         console.log(`🎌 [Official Streams] Checking for official One Pace streams for ${episodeInfo.id}...`);
         
-        const onePaceStreams = new OnePaceStreamsIntegration();
+        const onePaceStreams = new OnePaceStreamsIntegration(torboxIntegration);
         const officialStreams = await onePaceStreams.getOfficialStreams(episodeInfo);
         
         if (officialStreams.length > 0) {
@@ -257,8 +257,22 @@ builder.defineStreamHandler(async (args) => {
         // Scenario 1: Direct file format "WS_3"
         console.log(`🔍 [Stream Handler] Static file format detected: ${id}`);
         episodeId = id;
-        episodeInfo = { title: `Episode ${id}`, id: episodeId };
-        console.log(`✅ [Stream Handler] Using direct episode ID: ${episodeId}`);
+        
+        // Try to load full episode metadata from meta file for better PixelDrain integration
+        const metaData = loadJsonFile("./meta/series/pp_onepace.json");
+        if (metaData && metaData.meta && metaData.meta.videos) {
+            const foundEpisode = metaData.meta.videos.find(video => video.id === episodeId);
+            if (foundEpisode) {
+                episodeInfo = foundEpisode;
+                console.log(`✅ [Stream Handler] Found full metadata for ${episodeId}: ${episodeInfo.title}`);
+            } else {
+                episodeInfo = { title: `Episode ${id}`, id: episodeId };
+                console.log(`⚠️ [Stream Handler] No metadata found, using basic info for ${episodeId}`);
+            }
+        } else {
+            episodeInfo = { title: `Episode ${id}`, id: episodeId };
+            console.log(`⚠️ [Stream Handler] Could not load meta file, using basic info for ${episodeId}`);
+        }
     }
 
     // Now load the stream data for this episode
@@ -267,39 +281,57 @@ builder.defineStreamHandler(async (args) => {
     const streamData = loadJsonFile(streamFilePath);
     
     if (!streamData || !streamData.streams) {
-        return Promise.resolve({ streams: [] });
+        // Even if no cached stream data, we can still return PixelDrain streams if TorBox is available
+        console.log(`⚠️ [Stream Handler] No cached stream data for ${episodeId}, will try PixelDrain/TorBox only`);
     }
 
     const streams = [];
     
-    // Step 1: Get official One Pace streams (HIGHEST PRIORITY)
-    console.log(`🎌 [Stream] Fetching official One Pace streams...`);
-    const officialStreams = await fetchOfficialStreams(episodeInfo);
-    
-    // Step 2: Check if Torbox integration is available
-    console.log(`🔍 [Stream] Checking for Torbox integration...`);
+    // Step 1: Check if Torbox integration is available - TORBOX IS THE NORTH STAR
+    console.log(`🔍 [Stream] Checking for Torbox integration (NORTH STAR)...`);
     const torboxIntegration = getTorboxIntegration(args);
     const hasTorbox = !!torboxIntegration;
     
     if (hasTorbox) {
-        console.log(`🚀 [Stream] Torbox mode: Will provide Torbox streams as secondary option`);
+        console.log(`🚀 [Stream] TORBOX MODE (NORTH STAR): All streams via TorBox`);
+        console.log(`🚀 [Stream] TorBox provides ALL metadata: hashes, OpenSubtitles, file details, etc.`);
     } else {
-        console.log(`📁 [Stream] Torrent mode: Will provide torrent streams as fallback`);
+        console.log(`📁 [Stream] No TorBox token - torrent mode only`);
+        console.log(`⚠️ [Stream] TorBox required for PixelDrain URLs - skipping official streams`);
+    }
+    
+    // Step 2: Get official One Pace streams via PixelDrain/TorBox FIRST (HIGHEST PRIORITY)
+    // TorBox is the source of truth - it provides everything
+    let officialStreams = [];
+    if (hasTorbox) {
+        console.log(`🎌 [Stream] Fetching official One Pace streams via TorBox (NORTH STAR)...`);
+        console.log(`📋 [Stream] Episode info: id=${episodeInfo.id}, title=${episodeInfo.title || 'N/A'}, season=${episodeInfo.season || 'N/A'}, episode=${episodeInfo.episode || 'N/A'}`);
+        officialStreams = await fetchOfficialStreams(episodeInfo, torboxIntegration);
+        console.log(`✅ [Stream] Got ${officialStreams.length} official PixelDrain streams from TorBox`);
     }
     
     // Step 3: Fetch external subtitles for this episode
     console.log(`🔍 [Stream] Fetching external subtitles...`);
     const externalSubtitles = await fetchExternalSubtitles(episodeInfo, args);
     
-    // Step 4: Add official streams first (highest priority)
+    // Step 4: Add official PixelDrain/TorBox streams first (HIGHEST PRIORITY)
     if (officialStreams.length > 0) {
-        console.log(`🎌 [Stream] Adding ${officialStreams.length} official One Pace streams`);
+        console.log(`🎌 [Stream] Adding ${officialStreams.length} official One Pace streams (HIGHEST PRIORITY)`);
         
-        // Add external subtitles to official streams
+        // Process each official stream - ensure all TorBox metadata (including opensubtitlesHash) is preserved
         officialStreams.forEach(stream => {
+            // TorBox streams already include opensubtitlesHash in behaviorHints from TorBox response
+            // Stremio will AUTOMATICALLY use opensubtitlesHash to fetch matching subtitles from OpenSubtitles
+            if (stream.behaviorHints?.opensubtitlesHash) {
+                console.log(`🔤 [Stream] Stream "${stream.title}" has opensubtitlesHash: ${stream.behaviorHints.opensubtitlesHash.substring(0, 16)}... - Stremio will auto-load subtitles`);
+            } else {
+                console.log(`⚠️ [Stream] Stream "${stream.title}" missing opensubtitlesHash - subtitles may not auto-match`);
+            }
+            
+            // Add external subtitles as additional options (TorBox hash enables auto-matching via OpenSubtitles)
             if (externalSubtitles.length > 0) {
                 stream.subtitles = [
-                    ...(stream.subtitles || []), // Keep existing embedded subtitles
+                    ...(stream.subtitles || []), // Keep existing embedded subtitles from TorBox
                     ...externalSubtitles.map(sub => ({
                         url: sub.url,
                         lang: sub.lang,
@@ -310,13 +342,16 @@ builder.defineStreamHandler(async (args) => {
         });
         
         streams.push(...officialStreams);
+    } else if (hasTorbox) {
+        console.log(`⚠️ [Stream] No official PixelDrain streams found for ${episodeInfo.id} - TorBox may not have this episode yet`);
     }
     
-    // Step 5: Add Torbox/Torrent streams as secondary options
-    for (const stream of streamData.streams) {
-        if (stream.infoHash) {
-            
-            if (hasTorbox) {
+    // Step 5: Add cached Torbox/Torrent streams as fallback (ONLY if we have cached stream data)
+    if (streamData && streamData.streams && streamData.streams.length > 0) {
+        console.log(`📁 [Stream] Processing ${streamData.streams.length} cached stream sources...`);
+        for (const stream of streamData.streams) {
+            if (stream.infoHash) {
+                if (hasTorbox) {
                 // TORBOX MODE: Provide Torbox streams as secondary option
                 const fileIndex = stream.fileIdx || 0;
                 console.log(`✅ [Stream] Processing Torbox stream for hash: ${stream.infoHash}, fileIdx: ${fileIndex}`);
@@ -386,6 +421,7 @@ builder.defineStreamHandler(async (args) => {
                 }
                 
                 streams.push(torrentStream);
+            }
             }
         }
     }

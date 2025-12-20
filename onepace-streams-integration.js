@@ -1,9 +1,13 @@
 const fetch = require('node-fetch');
+const PixeldrainIntegration = require('./pixeldrain-integration');
 
 class OnePaceStreamsIntegration {
-    constructor() {
+    constructor(torboxIntegration = null) {
         this.baseUrl = 'https://onepace.net/en/watch';
         console.log(`🎌 [OnePace Streams] Initialized with official One Pace video streams`);
+        
+        // Initialize PixelDrain integration with TorBox integration
+        this.pixeldrain = new PixeldrainIntegration(torboxIntegration);
         
         // Static mapping of episode IDs to One Pace website entries
         // This provides a fallback and faster lookup
@@ -19,7 +23,15 @@ class OnePaceStreamsIntegration {
         console.log(`🔍 [OnePace Streams] Searching official streams for episode: ${episodeInfo.id}`);
         
         try {
-            // Get the One Pace entry for this episode
+            // Try PixelDrain integration first (uses extracted URLs from website)
+            const pixeldrainStreams = await this.pixeldrain.getStreamsForEpisode(episodeInfo.id, episodeInfo);
+            
+            if (pixeldrainStreams && pixeldrainStreams.length > 0) {
+                console.log(`✅ [OnePace Streams] Found ${pixeldrainStreams.length} PixelDrain streams`);
+                return pixeldrainStreams;
+            }
+            
+            // Fallback to static mapping if PixelDrain doesn't have it
             const onePaceEntry = this.getOnePaceEntry(episodeInfo.id);
             
             if (!onePaceEntry) {
